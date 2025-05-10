@@ -2,18 +2,18 @@
 set -euo pipefail
 
 # 1. Determine OS and architecture
-OS=$(uname | tr '[:upper:]' '[:lower:]')                    # e.g. linux :contentReference[oaicite:0]{index=0}
+OS=$(uname | tr '[:upper:]' '[:lower:]')
 ARCH_RAW=$(uname -m)
 case "$ARCH_RAW" in
-  x86_64) ARCH="amd64" ;;                                   # 64-bit Intel/AMD :contentReference[oaicite:1]{index=1}
-  i386|i686) ARCH="386" ;;                                  # 32-bit Intel/AMD
-  armv7*|armv6*) ARCH="arm-v7" ;;                           # 32-bit ARM
-  aarch64) ARCH="arm64" ;;                                  # 64-bit ARM
+  x86_64) ARCH="amd64" ;;
+  i386|i686) ARCH="386" ;;
+  armv7*|armv6*) ARCH="arm-v7" ;;
+  aarch64) ARCH="arm64" ;;
   *) echo "Unsupported architecture: $ARCH_RAW" >&2; exit 1 ;;
 esac
 
 ZIP_NAME="rclone-current-${OS}-${ARCH}.zip"
-DOWNLOAD_URL="https://downloads.rclone.org/${ZIP_NAME}"     # official download URL :contentReference[oaicite:2]{index=2}
+DOWNLOAD_URL="https://downloads.rclone.org/${ZIP_NAME}"
 
 # 2. Download and unpack
 TMPDIR=$(mktemp -d)
@@ -21,7 +21,7 @@ echo "Downloading ${ZIP_NAME}..."
 curl -fsSL "$DOWNLOAD_URL" -o "$TMPDIR/${ZIP_NAME}"
 unzip -q "$TMPDIR/${ZIP_NAME}" -d "$TMPDIR"
 
-# 3. Find the extracted directory (e.g. rclone-v1.67.0-linux-amd64)
+# 3. Find the extracted directory
 EXTRACTED_DIR=$(find "$TMPDIR" -maxdepth 1 -type d -name "rclone-*-linux-${ARCH}" | head -n1)
 if [[ -z "$EXTRACTED_DIR" ]]; then
   echo "Error: could not find extracted rclone directory in $TMPDIR" >&2
@@ -53,10 +53,16 @@ fi
 # 5. Cleanup
 rm -rf "$TMPDIR"
 
-# 6. Remind about PATH
+# 6. Run profile_path.sh if it exists and is executable
+PROFILE_PATH_SCRIPT="$HOME/profile_path.sh"
+if [[ -x "$PROFILE_PATH_SCRIPT" ]]; then
+  echo "Running profile_path.sh to update PATH..."
+  "$PROFILE_PATH_SCRIPT"
+else
+  echo "Warning: profile_path.sh not found or not executable at $PROFILE_PATH_SCRIPT"
+fi
+
+# 7. Completion message
 echo
 echo "Installation complete!"
-echo "Ensure '$BIN_DIR' is in your PATH. For example, add to '~/.bashrc' or '~/.profile':"
-echo "  export PATH=\"$BIN_DIR:\$PATH\""
-echo
 echo "You can now run 'rclone version' to verify."
